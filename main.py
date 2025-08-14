@@ -43,6 +43,19 @@ def save_last_session(session_id):
 
 last_session = load_last_session()
 
+# ====== RANDOM LÝ DO ======
+LY_DO_LIST = [
+    "Phân tích lịch sử 3 phiên gần nhất",
+    "Xem xét 98% chẵn/lẻ",
+    "Dựa vào tổng xúc xắc lớn hay nhỏ",
+    "Tham khảo kết quả trung bình 5 phiên",
+    "Theo xu hướng Tài/Xỉu trước đó",
+    "Dựa vào thống kê xác suất",
+    "Kết hợp lịch sử và tổng xúc xắc",
+    "Phân tích chẵn/lẻ & tổng phiên trước",
+    "Dự đoán theo chuỗi trước đó"
+]
+
 # ====== SUPPORT FUNCTIONS ======
 def generate_key(length=12):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -163,14 +176,16 @@ async def notify_users(app):
                     last_session = session_id
                     save_last_session(session_id)
 
+                    # Lý do random
+                    ly_do = random.choice(LY_DO_LIST)
+
                     msg = (
                         f"🎲 **PHIÊN:** `{res['current_session']}`\n"
                         f"🎲 **XÚC XẮC:** {res['current_dice']}\n"
                         f"📊 **KẾT QUẢ:** {res['current_result']}\n"
                         f"🔮 **DỰ ĐOÁN PHIÊN TIẾP THEO:** {res['du_doan']}\n"
-                        f"🧠 **LÝ DO:** {res['ly_do']}\n\n"
-                        "💡 **CHIẾN LƯỢC & QUẢN LÝ VỐN**\n"
-                        )
+                        f"🧠 **LÝ DO:** {ly_do}"
+                    )
 
                     # Gửi cho tất cả user đã bật bot và key còn hạn
                     for uid, state in user_states.items():
