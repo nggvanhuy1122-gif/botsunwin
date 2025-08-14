@@ -4,18 +4,18 @@ import json
 import os
 import random
 import string
-import requests
+import aiohttp
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ====== CONFIG ======
 TOKEN = "7318584635:AAE7HIFZiBeytAH-14M_ixyhtjOPrc0P06s"
 ADMIN_ID = 7598401539
-GROUP_CHAT_ID = -1002860765460
 API_URL = "https://apibomaylanhat.onrender.com/predict"
 
 KEY_FILE = "keys.json"
 STATE_FILE = "states.json"
+LAST_SESSION_FILE = "last_session.json"
 
 # ====== DATA STORAGE ======
 def load_data(file, default):
@@ -31,7 +31,17 @@ def save_data(file, data):
 key_store = load_data(KEY_FILE, {})
 user_states = load_data(STATE_FILE, {})
 
-last_session = None
+def load_last_session():
+    if os.path.exists(LAST_SESSION_FILE):
+        with open(LAST_SESSION_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return None
+
+def save_last_session(session_id):
+    with open(LAST_SESSION_FILE, "w", encoding="utf-8") as f:
+        f.write(str(session_id))
+
+last_session = load_last_session()
 
 # ====== SUPPORT FUNCTIONS ======
 def generate_key(length=12):
@@ -137,47 +147,47 @@ async def taokey(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ====== API LOOP ======
-import asyncio
-
 async def notify_users(app):
     global last_session
-    lock = asyncio.Lock()  # khóa để tránh gửi trùng khi task restart
-
     while True:
         try:
-            async with lock:  # chỉ cho phép 1 vòng lặp xử lý tại 1 thời điểm
-                res = requests.get(API_URL, timeout=5).json()
+            async with aiohttp.ClientSession() as session:
+                async with session.get(API_URL) as resp:
+                    res = await resp.json()
 
-                if "phien" in res:
-                    session = res["phien"]
+            if "current_session" in res:
+                session_id = str(res["current_session"])
 
-                    # Chỉ gửi nếu là phiên mới
-                    if session != last_session:
-                        last_session = session
-                        msg = (
-                            f"🎲 **PHIÊN:** `{res['phien']}`\n"
-                            f"🎲 **XÚC XẮC:** {res['xuc_xac']}\n"
-                            f"📊 **KẾT QUẢ:** {res['ket_qua']}\n"
-                            f"🔮 **DỰ ĐOÁN:** {res['du_doan']}"
+                # Chỉ gửi nếu phiên mới
+                if session_id != last_session:
+                    last_session = session_id
+                    save_last_session(session_id)
+
+                    msg = (
+                        f"🎲 **PHIÊN:** `{res['current_session']}`\n"
+                        f"🎲 **XÚC XẮC:** {res['current_dice']}\n"
+                        f"📊 **KẾT QUẢ:** {res['current_result']}\n"
+                        f"🔮 **DỰ ĐOÁN PHIÊN TIẾP THEO:** {res['du_doan']}\n"
+                        f"🧠 **LÝ DO:** {res['ly_do']}\n\n"
+                        "💡 **CHIẾN LƯỢC & QUẢN LÝ VỐN**\n"
                         )
 
-                        # Gửi cho tất cả user đã bật bot
-                        for uid, state in user_states.items():
-                            if state and check_key_valid(uid):
-                                try:
-                                    await app.bot.send_message(
-                                        chat_id=int(uid),
-                                        text=msg,
-                                        parse_mode="Markdown"
-                                    )
-                                except Exception as e:
-                                    print(f"Lỗi gửi cho {uid}: {e}")
+                    # Gửi cho tất cả user đã bật bot và key còn hạn
+                    for uid, state in user_states.items():
+                        if state and check_key_valid(uid):
+                            try:
+                                await app.bot.send_message(
+                                    chat_id=int(uid),
+                                    text=msg,
+                                    parse_mode="Markdown"
+                                )
+                            except Exception as e:
+                                print(f"Lỗi gửi cho {uid}: {e}")
 
-            await asyncio.sleep(1)  # kiểm tra API mỗi 1 giây
-
+            await asyncio.sleep(1)
         except Exception as e:
             print("Lỗi vòng lặp:", e)
-            await asyncio.sleep(2)  # nghỉ 2 giây nếu lỗi
+            await asyncio.sleep(2)
 
 # ====== MAIN ======
 if __name__ == "__main__":
