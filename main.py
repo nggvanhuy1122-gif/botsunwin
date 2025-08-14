@@ -9,7 +9,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ====== CONFIG ======
-TOKEN = "7318584635:AAH-kPr0CoVzO-2bQkYg6KdS-4Be_-w2owo"
+TOKEN = "7318584635:AAGrfVV-h8TaOJTYowLIfkRZg8XfgnEvLSs"
 ADMIN_ID = 7598401539
 GROUP_CHAT_ID = -1002860765460
 API_URL = "https://apibomaylanhat.onrender.com/predict"
