@@ -137,33 +137,47 @@ async def taokey(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ====== API LOOP ======
+import asyncio
+
 async def notify_users(app):
     global last_session
+    lock = asyncio.Lock()  # khóa để tránh gửi trùng khi task restart
+
     while True:
         try:
-            res = requests.get(API_URL, timeout=5).json()
-            if "current_session" in res:
-                session = res["current_session"]
-                if session != last_session:
-                    last_session = session
-                    msg = (
-                        f"🎯 **PHIÊN HIỆN TẠI:** `{res['current_session']}`\n"
-                        f"🎲 **XÚC XẮC:** {res['current_dice']}\n"
-                        f"📊 **TỔNG:** {res['current_total']} - **KẾT QUẢ:** {res['current_result']}\n\n"
-                        f"🆕 **PHIÊN TIẾP:** `{res['next_session']}`\n"
-                        f"🔮 **DỰ ĐOÁN:** {res['du_doan']}\n"
-                        f"💡 **Lý do:** {res['ly_do']}"
-                    )
-                    # gửi nhóm
-                    await app.bot.send_message(chat_id=GROUP_CHAT_ID, text=msg, parse_mode="Markdown")
-                    # gửi user nào bật bot và còn hạn
-                    for uid, state in user_states.items():
-                        if state and check_key_valid(uid):
-                            await app.bot.send_message(chat_id=int(uid), text=msg, parse_mode="Markdown")
-            await asyncio.sleep(1)
+            async with lock:  # chỉ cho phép 1 vòng lặp xử lý tại 1 thời điểm
+                res = requests.get(API_URL, timeout=5).json()
+
+                if "phien" in res:
+                    session = res["phien"]
+
+                    # Chỉ gửi nếu là phiên mới
+                    if session != last_session:
+                        last_session = session
+                        msg = (
+                            f"🎲 **PHIÊN:** `{res['phien']}`\n"
+                            f"🎲 **XÚC XẮC:** {res['xuc_xac']}\n"
+                            f"📊 **KẾT QUẢ:** {res['ket_qua']}\n"
+                            f"🔮 **DỰ ĐOÁN:** {res['du_doan']}"
+                        )
+
+                        # Gửi cho tất cả user đã bật bot
+                        for uid, state in user_states.items():
+                            if state and check_key_valid(uid):
+                                try:
+                                    await app.bot.send_message(
+                                        chat_id=int(uid),
+                                        text=msg,
+                                        parse_mode="Markdown"
+                                    )
+                                except Exception as e:
+                                    print(f"Lỗi gửi cho {uid}: {e}")
+
+            await asyncio.sleep(1)  # kiểm tra API mỗi 1 giây
+
         except Exception as e:
-            print("Lỗi:", e)
-            await asyncio.sleep(1)
+            print("Lỗi vòng lặp:", e)
+            await asyncio.sleep(2)  # nghỉ 2 giây nếu lỗi
 
 # ====== MAIN ======
 if __name__ == "__main__":
