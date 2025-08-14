@@ -12,6 +12,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 TOKEN = "8145096925:AAH6tDMlN4E63PHI7lAp3-nHy9IEcJy0Jwo"
 ADMIN_ID = 7598401539
 API_URL = "https://apibomaylanhat.onrender.com/predict"
+GROUP_CHAT_ID = -1002860765460  # ID nhóm
 
 KEY_FILE = "keys.json"
 STATE_FILE = "states.json"
@@ -53,7 +54,22 @@ LY_DO_LIST = [
     "Dựa vào thống kê xác suất",
     "Kết hợp lịch sử và tổng xúc xắc",
     "Phân tích chẵn/lẻ & tổng phiên trước",
-    "Dự đoán theo chuỗi trước đó"
+    "Dự đoán theo chuỗi trước đó",
+    "Nhận diện mẫu lặp từ 10 phiên gần nhất",
+    "Theo tỷ lệ thắng của mỗi cửa",
+    "Dựa vào sự thay đổi đột ngột của kết quả",
+    "Tính toán xác suất ngược",
+    "Áp dụng chiến lược Martingale",
+    "Dựa trên dữ liệu thống kê dài hạn",
+    "Theo mô hình dự đoán AI huấn luyện",
+    "Ưu tiên theo chuỗi dài hiện tại",
+    "Xem xét ảnh hưởng của phiên đặc biệt",
+    "Theo sự phân bổ đồng đều kết quả",
+    "Kết hợp nhiều thuật toán dự đoán",
+    "Dựa vào dữ liệu phân phối chuẩn",
+    "Phân tích chuỗi tăng/giảm liên tục",
+    "Theo tín hiệu phân tích kỹ thuật",
+    "Sử dụng mô hình dự đoán hồi quy"
 ]
 
 # ====== SUPPORT FUNCTIONS ======
@@ -78,7 +94,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "`/tatbot` - Dừng nhận dự đoán\n"
         "`/stop` - Ngừng bot\n"
         "`/taokey <time> <devices>` - Tạo key (admin)\n"
-        "`/help` - Hướng dẫn sử dụng"
+        "`/help` - Hướng dẫn sử dụng\n"
+        "`/chatid` - Xem chat ID của bạn"
     )
     await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -91,6 +108,10 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "4️⃣ Admin tạo key: `/taokey 3d 1` (3 ngày, 1 thiết bị)",
         parse_mode="Markdown"
     )
+
+async def chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    await update.message.reply_text(f"💬 Chat ID của bạn là: `{chat_id}`", parse_mode="Markdown")
 
 async def key_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) != 1:
@@ -187,6 +208,16 @@ async def notify_users(app):
                         f"🧠 **LÝ DO:** {ly_do}"
                     )
 
+                    # Gửi vào nhóm
+                    try:
+                        await app.bot.send_message(
+                            chat_id=GROUP_CHAT_ID,
+                            text=msg,
+                            parse_mode="Markdown"
+                        )
+                    except Exception as e:
+                        print(f"Lỗi gửi nhóm: {e}")
+
                     # Gửi cho tất cả user đã bật bot và key còn hạn
                     for uid, state in user_states.items():
                         if state and check_key_valid(uid):
@@ -210,6 +241,7 @@ if __name__ == "__main__":
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("chatid", chatid))
     app.add_handler(CommandHandler("key", key_cmd))
     app.add_handler(CommandHandler("checkkey", checkkey))
     app.add_handler(CommandHandler("chaybot", chaybot))
