@@ -9,7 +9,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ====== CONFIG ======
-TOKEN = "8145096925:AAH6tDMlN4E63PHI7lAp3-nHy9IEcJy0Jwo"
+TOKEN = "7318584635:AAGqNGVQP9tzUKFSHVZdqIDfpe99yg2tohE"
 ADMIN_ID = 7598401539
 API_URL = "https://apibomaylanhat.onrender.com/predict"
 GROUP_CHAT_ID = -1002860765460  # ID nhóm
@@ -86,36 +86,36 @@ def check_key_valid(user_id):
 # ====== BOT COMMANDS ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
-        "🤖 **BOT DỰ ĐOÁN SUNWIN**\n\n"
+        "🤖 BOT DỰ ĐOÁN SUNWIN\n\n"
         "📋 Danh sách lệnh:\n"
-        "`/key <key>` - Nhập key để kích hoạt\n"
-        "`/checkkey` - Kiểm tra key còn hạn không\n"
-        "`/chaybot` - Bắt đầu nhận dự đoán\n"
-        "`/tatbot` - Dừng nhận dự đoán\n"
-        "`/stop` - Ngừng bot\n"
-        "`/taokey <time> <devices>` - Tạo key (admin)\n"
-        "`/help` - Hướng dẫn sử dụng\n"
-        "`/chatid` - Xem chat ID của bạn"
+        "/key <key> - Nhập key để kích hoạt\n"
+        "/checkkey - Kiểm tra key còn hạn không\n"
+        "/chaybot - Bắt đầu nhận dự đoán\n"
+        "/tatbot - Dừng nhận dự đoán\n"
+        "/stop - Ngừng bot\n"
+        "/taokey <time> <devices> - Tạo key (admin)\n"
+        "/help - Hướng dẫn sử dụng\n"
+        "/chatid - Xem chat ID của bạn"
     )
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📖 **HƯỚNG DẪN**\n"
-        "1️⃣ Nhập key: `/key <key>`\n"
-        "2️⃣ Bật bot: `/chaybot`\n"
-        "3️⃣ Tắt bot: `/tatbot`\n"
-        "4️⃣ Admin tạo key: `/taokey 3d 1` (3 ngày, 1 thiết bị)",
+        "📖 HƯỚNG DẪN\n"
+        "1️⃣ Nhập key: /key <key>\n"
+        "2️⃣ Bật bot: /chaybot\n"
+        "3️⃣ Tắt bot: /tatbot\n"
+        "4️⃣ Admin tạo key: /taokey 3d 1 (3 ngày, 1 thiết bị)",
         parse_mode="Markdown"
     )
 
 async def chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    await update.message.reply_text(f"💬 Chat ID của bạn là: `{chat_id}`", parse_mode="Markdown")
+    await update.message.reply_text(f"💬 Chat ID của bạn là: {chat_id}", parse_mode="Markdown")
 
 async def key_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) != 1:
-        await update.message.reply_text("❌ Sai cú pháp!\nVí dụ: `/key ABC123`", parse_mode="Markdown")
+        await update.message.reply_text("❌ Sai cú pháp!\nVí dụ: /key ABC123", parse_mode="Markdown")
         return
     user_id = str(update.effective_user.id)
     key = context.args[0]
@@ -163,7 +163,7 @@ async def taokey(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⛔ Bạn không có quyền!")
         return
     if len(context.args) != 2:
-        await update.message.reply_text("❌ Sai cú pháp!\nVD: `/taokey 3d 1`", parse_mode="Markdown")
+        await update.message.reply_text("❌ Sai cú pháp!\nVD: /taokey 3d 1", parse_mode="Markdown")
         return
     time_str = context.args[0]
     devices = int(context.args[1])
@@ -176,7 +176,7 @@ async def taokey(update: Update, context: ContextTypes.DEFAULT_TYPE):
     key_store[new_key] = {"expire": expire_date, "devices": devices}
     save_data(KEY_FILE, key_store)
     await update.message.reply_text(
-        f"🔑 **TẠO KEY THÀNH CÔNG**\n🆔 Key: `{new_key}`\n📅 Hạn: {expire_date}\n📱 Thiết bị: {devices}",
+        f"🔑 TẠO KEY THÀNH CÔNG\n🆔 Key: {new_key}\n📅 Hạn: {expire_date}\n📱 Thiết bị: {devices}",
         parse_mode="Markdown"
     )
 
@@ -189,68 +189,65 @@ async def notify_users(app):
                 async with session.get(API_URL) as resp:
                     res = await resp.json()
 
-            if "current_session" in res:
-                session_id = str(res["current_session"])
+                    if "current_session" in res:  
+                        session_id = str(res["current_session"])  
 
-                # Chỉ gửi nếu phiên mới
-                if session_id != last_session:
-                    last_session = session_id
-                    save_last_session(session_id)
+                        if session_id != last_session:  
+                            last_session = session_id  
+                            save_last_session(session_id)  
 
-                    # Lý do random
-                    ly_do = random.choice(LY_DO_LIST)
+                            # Lý do random  
+                            ly_do = random.choice(LY_DO_LIST)  
 
-                    msg = (
-                        f"🎲 **PHIÊN:** `{res['current_session']}`\n"
-                        f"🎲 **XÚC XẮC:** {res['current_dice']}\n"
-                        f"📊 **KẾT QUẢ:** {res['current_result']}\n"
-                        f"🔮 **DỰ ĐOÁN PHIÊN TIẾP THEO:** {res['du_doan']}\n"
-                        f"🧠 **LÝ DO:** {ly_do}"
-                    )
+                            msg = (
+                                "♦️ SUNWIN VIP - PHÂN TÍCH CHUẨN XÁC ♦️\n"
+                                "══════════════════════════\n"
+                                f"🆔 Phiên: {res['current_session']}\n"
+                                f"🎲 Xúc xắc: {'-'.join(map(str, res['current_dice']))}\n"
+                                f"🧮 Tổng điểm: {res['current_total']} | Kết quả: {res['current_result']}\n"
+                                "──────────────────────────\n"
+                                f"🔮 Dự đoán phiên {res['next_session']}: 🔥 {res['du_doan']}\n"
+                                f"🎯 Khuyến nghị: Đặt cược {res['du_doan']}\n\n"
+                                f"📶 Xu hướng: {ly_do}\n"
+                                "══════════════════════════\n"
+                                "✨ Cre: Ng Văn Huy✨"
+                            )
 
-                    # Gửi vào nhóm
-                    try:
-                        await app.bot.send_message(
-                            chat_id=GROUP_CHAT_ID,
-                            text=msg,
-                            parse_mode="Markdown"
-                        )
-                    except Exception as e:
-                        print(f"Lỗi gửi nhóm: {e}")
+                            # Gửi nhóm
+                            try:  
+                                await app.bot.send_message(chat_id=GROUP_CHAT_ID, text=msg, parse_mode="Markdown")  
+                            except Exception as e:  
+                                print(f"Lỗi gửi nhóm: {e}")  
 
-                    # Gửi cho tất cả user đã bật bot và key còn hạn
-                    for uid, state in user_states.items():
-                        if state and check_key_valid(uid):
-                            try:
-                                await app.bot.send_message(
-                                    chat_id=int(uid),
-                                    text=msg,
-                                    parse_mode="Markdown"
-                                )
-                            except Exception as e:
-                                print(f"Lỗi gửi cho {uid}: {e}")
+                            # Gửi từng user
+                            for uid, state in user_states.items():  
+                                if state and check_key_valid(uid):  
+                                    try:  
+                                        await app.bot.send_message(chat_id=int(uid), text=msg, parse_mode="Markdown")  
+                                    except Exception as e:  
+                                        print(f"Lỗi gửi cho {uid}: {e}")  
 
-            await asyncio.sleep(1)
-        except Exception as e:
-            print("Lỗi vòng lặp:", e)
+            await asyncio.sleep(1)  
+        except Exception as e:  
+            print("Lỗi vòng lặp:", e)  
             await asyncio.sleep(2)
 
 # ====== MAIN ======
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_cmd))
-    app.add_handler(CommandHandler("chatid", chatid))
-    app.add_handler(CommandHandler("key", key_cmd))
-    app.add_handler(CommandHandler("checkkey", checkkey))
-    app.add_handler(CommandHandler("chaybot", chaybot))
-    app.add_handler(CommandHandler("tatbot", tatbot))
-    app.add_handler(CommandHandler("stop", stop))
-    app.add_handler(CommandHandler("taokey", taokey))
+    app.add_handler(CommandHandler("start", start))  
+    app.add_handler(CommandHandler("help", help_cmd))  
+    app.add_handler(CommandHandler("chatid", chatid))  
+    app.add_handler(CommandHandler("key", key_cmd))  
+    app.add_handler(CommandHandler("checkkey", checkkey))  
+    app.add_handler(CommandHandler("chaybot", chaybot))  
+    app.add_handler(CommandHandler("tatbot", tatbot))  
+    app.add_handler(CommandHandler("stop", stop))  
+    app.add_handler(CommandHandler("taokey", taokey))  
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(notify_users(app))
+    loop = asyncio.get_event_loop()  
+    loop.create_task(notify_users(app))  
 
-    print("✅ Bot đang chạy...")
+    print("✅ Bot đang chạy...")  
     app.run_polling()
